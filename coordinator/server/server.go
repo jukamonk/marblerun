@@ -10,16 +10,20 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/edgelesssys/marblerun/coordinator/core"
+	"github.com/edgelesssys/marblerun/coordinator/etcd"
 	"github.com/edgelesssys/marblerun/coordinator/rpc"
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	"go.etcd.io/etcd/embed"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -162,5 +166,25 @@ func RunClientServer(mux *http.ServeMux, address string, tlsConfig *tls.Config, 
 	}
 	zapLogger.Info("starting client https server", zap.String("address", address))
 	err := server.ListenAndServeTLS("", "")
+	zapLogger.Warn(err.Error())
+}
+
+// RunEtcdServer runs an etcd server
+func RunEtcdServer(nodeName, namespace, clusterName string, clusterSize int, debug bool, zapLogger *zap.Logger) {
+	ci := etcd.NewEtcdClusterInfo(namespace, clusterName, clusterSize)
+	cfg := etcd.GetConfig(nodeName, ci, debug)
+	e, err := embed.StartEtcd(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer e.Close()
+	select {
+	case <-e.Server.ReadyNotify():
+		zapLogger.Info("Server is ready!")
+	case <-time.After(60 * time.Second):
+		e.Server.Stop() // trigger a shutdown
+		zapLogger.Warn("Server took too long to start!")
+	}
+	err = <-e.Err()
 	zapLogger.Warn(err.Error())
 }

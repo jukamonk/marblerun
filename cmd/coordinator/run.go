@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/edgelesssys/marblerun/coordinator/config"
@@ -44,6 +45,13 @@ func run(validator quote.Validator, issuer quote.Issuer, sealKey []byte, sealDir
 	dnsNames := strings.Split(dnsNamesString, ",")
 	clientServerAddr := util.MustGetenv(config.ClientAddr)
 	meshServerAddr := util.MustGetenv(config.MeshAddr)
+	etcdNodeName := util.MustGetenv(config.EtcdNodeName)
+	etcNamespace := util.MustGetenv(config.EtcdNamespace)
+	etcClusterName := util.MustGetenv(config.EtcdClusterName)
+	etcClusterSize, err := strconv.Atoi(util.MustGetenv(config.EtcdClusterSize))
+	if err != nil {
+		panic(err)
+	}
 
 	// creating core
 	zapLogger.Info("creating the Core object")
@@ -55,6 +63,10 @@ func run(validator quote.Validator, issuer quote.Issuer, sealKey []byte, sealDir
 	if err != nil {
 		panic(err)
 	}
+
+	// start etcd server
+	zapLogger.Info("starting the etcd server")
+	go server.RunEtcdServer(etcdNodeName, etcNamespace, etcClusterName, etcClusterSize, devMode == "1", zapLogger)
 
 	// start client server
 	zapLogger.Info("starting the client server")

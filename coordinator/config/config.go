@@ -18,3 +18,15 @@ const SealDir = "EDG_COORDINATOR_SEAL_DIR"
 
 // DevMode enables more verbose logging
 const DevMode = "EDG_COORDINATOR_DEV_MODE"
+
+// EtcdNodeName is the name of the etcd node
+const EtcdNodeName = "EDG_COORDINATOR_NODE"
+
+// EtcdNamespace is the namespace of the coordinator
+const EtcdNamespace = "EDG_COORDINATOR_NAMESPACE"
+
+// EtcdClusterName is the etcd cluster's name
+const EtcdClusterName = "EDG_COORDINATOR_CLUSTER"
+
+// EtcdClusterSize is the etcd cluster's size
+const EtcdClusterSize = "EDG_COORDINATOR_CLUSTER_SIZE"
