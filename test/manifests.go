@@ -156,6 +156,13 @@ const ManifestJSON string = `{
 					"Port": "40000",
 					"Addr": "example.com"
 				}
+			],
+			"Incoming": [
+				{
+					"Port": "8080",
+					"Cert": "{{ pem .Secrets.cert_shared.Cert }}",
+					"Key": "{{ pem .Secrets.cert_shared.Private }}"
+				}
 			]
 		}
 	}

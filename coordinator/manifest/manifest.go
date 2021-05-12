@@ -67,6 +67,8 @@ type TLStag struct {
 type TLSTagEntry struct {
 	Port string
 	Addr string
+	Cert string
+	Key  string
 }
 
 // Check checks if the manifest is consistent.
