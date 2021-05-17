@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// Package config defines the environment variables expected by the Marble for configuration settings.
+// Package config defines the environment variables and JSON config format expected by the Marble for configuration settings.
 package config
 
 import (
@@ -33,3 +33,11 @@ const UUIDFile = "EDG_MARBLE_UUID_FILE"
 
 // UUIDFileDefault is the default file path to store the marble's uuid
 func UUIDFileDefault() string { return filepath.Join(util.MustGetwd(), "uuid") }
+
+// MarbleConfig describes the JSON config format a Marble can use additionally to the environment variables
+type MarbleConfig struct {
+	Address  string
+	Type     string
+	DNSNames []string
+	UUIDFile string
+}

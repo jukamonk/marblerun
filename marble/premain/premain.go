@@ -11,7 +11,9 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -28,6 +30,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
+
+const marbleConfigFileName = "marble-config.json"
 
 // storeUUID stores the uuid to the fs
 func storeUUID(appFs afero.Fs, marbleUUID uuid.UUID, filename string) error {
@@ -124,11 +128,23 @@ func PreMainEx(issuer quote.Issuer, activate ActivateFunc, hostfs, enclavefs afe
 
 	// get env variables
 	log.Println("fetching env variables")
-	coordAddr := util.Getenv(config.CoordinatorAddr, config.CoordinatorAddrDefault)
-	marbleType := util.MustGetenv(config.Type)
-	marbleDNSNamesString := util.Getenv(config.DNSNames, config.DNSNamesDefault)
-	marbleDNSNames := strings.Split(marbleDNSNamesString, ",")
-	uuidFile := util.Getenv(config.UUIDFile, config.UUIDFileDefault())
+	var coordinatorConfig config.MarbleConfig
+
+	// Load config entries from config file if one exist. These override the env vars
+	coordinatorConfigJSON, err := ioutil.ReadFile(marbleConfigFileName)
+	if !os.IsNotExist(err) {
+		if err != nil {
+			log.Println("cannot read", marbleConfigFileName)
+			log.Println("falling back to read env variables from host")
+		} else {
+			log.Println("filling env variables from", marbleConfigFileName)
+			if err := json.Unmarshal(coordinatorConfigJSON, &coordinatorConfig); err != nil {
+				return err
+			}
+		}
+	}
+
+	coordAddr, marbleType, marbleDNSNames, uuidFile := getFromConfigOrEnv(coordinatorConfig)
 
 	cert, privk, err := generateCertificate()
 	if err != nil {
@@ -239,4 +255,25 @@ func applyParameters(params *rpc.Parameters, fs afero.Fs) error {
 	}
 
 	return nil
+}
+
+func getFromConfigOrEnv(coordinatorConfig config.MarbleConfig) (string, string, []string, string) {
+	if coordinatorConfig.Address == "" {
+		coordinatorConfig.Address = util.Getenv(config.CoordinatorAddr, config.CoordinatorAddrDefault)
+	}
+
+	if coordinatorConfig.Type == "" {
+		coordinatorConfig.Type = util.MustGetenv(config.Type)
+	}
+
+	if coordinatorConfig.DNSNames == nil {
+		marbleDNSNamesString := util.Getenv(config.DNSNames, config.DNSNamesDefault)
+		coordinatorConfig.DNSNames = strings.Split(marbleDNSNamesString, ",")
+	}
+
+	if coordinatorConfig.UUIDFile == "" {
+		coordinatorConfig.UUIDFile = util.Getenv(config.UUIDFile, config.UUIDFileDefault())
+	}
+
+	return coordinatorConfig.Address, coordinatorConfig.Type, coordinatorConfig.DNSNames, coordinatorConfig.UUIDFile
 }
