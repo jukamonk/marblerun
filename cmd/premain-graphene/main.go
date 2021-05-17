@@ -8,7 +8,6 @@ package main
 
 import (
 	"os"
-	"strings"
 	"syscall"
 
 	marblePremain "github.com/edgelesssys/marblerun/marble/premain"
@@ -16,15 +15,6 @@ import (
 )
 
 func main() {
-	// filter env vars
-	for _, env := range os.Environ() {
-		if !strings.HasPrefix(env, "EDG_") && !strings.HasPrefix(env, "LD_LIBRARY_PATH=") {
-			if err := os.Unsetenv(strings.SplitN(env, "=", 2)[0]); err != nil {
-				panic(err)
-			}
-		}
-	}
-
 	// save the passed argument which is our service to spawn
 	service := os.Args[0]
 
